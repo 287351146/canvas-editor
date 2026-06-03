@@ -707,6 +707,20 @@ label:hover .text-icon-del{display:flex !important}
 .ctx-divider{height:1px;background:var(--border);margin:4px 0}
 .ctx-icon{width:18px;text-align:center;font-size:14px}
 
+/* ── 文字转表格对话框 ── */
+.ttt-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.35);z-index:10001;display:flex;align-items:center;justify-content:center}
+.ttt-dialog{background:#fff;border-radius:12px;padding:24px 28px;min-width:420px;max-width:600px;box-shadow:0 12px 40px rgba(0,0,0,.2)}
+.ttt-dialog h3{font-size:15px;font-weight:700;color:var(--at);margin:0 0 6px 0}
+.ttt-dialog .ttt-desc{font-size:12px;color:var(--am);margin-bottom:14px;line-height:1.5}
+.ttt-dialog textarea{width:100%;height:180px;border:1px solid var(--abd);border-radius:8px;padding:10px 12px;font-size:13px;resize:vertical;outline:none;font-family:inherit;box-sizing:border-box;line-height:1.6}
+.ttt-dialog textarea:focus{border-color:var(--ap);box-shadow:0 0 0 3px var(--apl)}
+.ttt-dialog .ttt-btns{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}
+.ttt-dialog .ttt-btns button{min-width:80px;height:34px;border-radius:7px;font-size:13px;cursor:pointer;border:none;font-weight:500}
+.ttt-dialog .ttt-btns .ttt-cancel{background:#f1f5f9;color:var(--at)}
+.ttt-dialog .ttt-btns .ttt-cancel:hover{background:#e2e8f0}
+.ttt-dialog .ttt-btns .ttt-confirm{background:var(--ap);color:#fff}
+.ttt-dialog .ttt-btns .ttt-confirm:hover{opacity:.9}
+
 /* ── Toast ── */
 .toast-container{position:fixed;top:58px;right:18px;z-index:10000;display:flex;flex-direction:column;gap:7px;pointer-events:none}
 .toast{background:#fff;border-radius:9px;box-shadow:0 8px 32px rgba(0,0,0,.15);padding:10px 18px;font-size:13px;display:flex;align-items:center;gap:8px;animation:toastIn .3s ease;pointer-events:auto;max-width:320px}
@@ -934,7 +948,7 @@ svg.i{width:16px;height:16px;flex-shrink:0;vertical-align:middle;display:inline-
   <div class="topbar-bc" id="topBc" style="display:none"></div>
   <div class="topbar-status" id="topStatus"><div class="dot"></div><span>草稿</span></div>
   <div class="topbar-actions">
-    <button class="tb-btn" onclick="window.open('https://287351146.github.io/canvas-editor/canvas-editor/xy/','_blank')"><svg class="i"><use href="#i-eye"/></svg> 预览</button>
+    <button class="tb-btn" onclick="window.open('https://yangxiaoer1024-netizen.github.io/xueyuanduan/','_blank')"><svg class="i"><use href="#i-eye"/></svg> 预览</button>
     <div class="topbar-divider"></div>
     <button class="tb-btn" onclick="saveDraft()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>保存草稿
@@ -2786,7 +2800,7 @@ function buildTypeSpecificProps(node) {
         '<div class="mod-card-hd-left">'+
           '<div class="mod-card-icon-wrap" style="width:24px;height:24px;border-radius:5px">'+bIconSvg+'</div>'+
           '<div class="mod-card-title">'+
-            '<input class="mod-card-title-input" value="空白模版" style="font-size:13px;font-weight:700;color:#94a3b8" onchange="updateNodeField(\''+node.id+'\',\'wrapperTitle\',this.value)" oninput="autoFitInputWidth(this)" onfocus="this.readOnly=false;this.select()" title="双击编辑标题" readonly ondblclick="this.readOnly=false;this.focus()">'+
+            '<input class="mod-card-title-input" value="'+esc(node.config.wrapperTitle||'空白模版')+'" style="font-size:13px;font-weight:700;color:#334155" onchange="updateNodeField(\''+node.id+'\',\'wrapperTitle\',this.value)" oninput="autoFitInputWidth(this)" onfocus="this.readOnly=false;this.select()" title="双击编辑标题" readonly ondblclick="this.readOnly=false;this.focus()">'+
             '<svg class="mod-card-title-pen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" onclick="var inp=this.previousElementSibling;inp.readOnly=false;inp.focus();inp.select()"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'+
           '</div>'+
         '</div>'+
@@ -2808,7 +2822,11 @@ function buildTypeSpecificProps(node) {
         mod.subElements.forEach(function(sub, si) {
           var st = sub.type;
           var sColor = MOD_COLORS[st]||'#888';
-          var sTitleText = sub.title || MOD_NAMES[st] || st;
+          var sTitleText = MOD_NAMES[st] || st;
+          if(st==='quiz' && sub.data && sub.data.qy==='multi'){ sTitleText='多选题'; }
+          if(st==='quiz' && (!sub.data || sub.data.qy!=='multi')){ sTitleText='单选题'; }
+          if(st==='person'){ sTitleText = (sub.data && sub.data.align==='right') ? '人物信息（居右）' : '人物信息（居左）'; }
+          if(st==='text' && sub.data && sub.data.icon==='link' && sub.data.title==='参考文献'){ sTitleText='参考文献'; }
           var sBody = renderSubElemBody(node.id, 0, si, sub);
           subHtml += '<div class="sub-elem-wrap" style="border-left:3px solid #8B5CF6;margin-top:8px;padding:6px 8px 8px">'+
             '<div class="mod-card-hd" style="margin-bottom:5px">'+
@@ -3053,7 +3071,7 @@ function rmNodeModTag(nodeId,mi,ti){const mods=getNodeMods(nodeId);if(mods[mi]&&
 function chNodeModTag(nodeId,mi,ti,v){const mods=getNodeMods(nodeId);if(mods[mi]&&mods[mi].data.tags&&mods[mi].data.tags[ti]){mods[mi].data.tags[ti].text=v;refreshPreview();}}
 function chNodeModTagImportant(nodeId,mi,ti,val){const mods=getNodeMods(nodeId);if(mods[mi]&&mods[mi].data.tags&&mods[mi].data.tags[ti]){mods[mi].data.tags[ti].important=val;refreshPreview();}}
 function addNodeModSpecialTag(nodeId,mi){const mods=getNodeMods(nodeId);if(mods[mi]&&mods[mi].data){if(!mods[mi].data.tags) mods[mi].data.tags=[];mods[mi].data.tags.push({text:''});refreshProps(nodeId.replace('_qmod',''));}}
-function rmNodeModSpecialTag(nodeId,mi,ti){const mods=getNodeMods(nodeId);if(mods[mi]&&mods[mi].data&&mods[mi].data.tags&&mods[mi].data.tags.length>1){var tag=mods[mi].data.tags[ti];if(tag&&tag.text&&tag.text.trim()!==''){showConfirm('是否删除？',function(yes){if(yes){mods[mi].data.tags.splice(ti,1);refreshProps(nodeId.replace('_qmod',''));}});return;}mods[mi].data.tags.splice(ti,1);refreshProps(nodeId.replace('_qmod',''));}}
+function rmNodeModSpecialTag(nodeId,mi,ti){const mods=getNodeMods(nodeId);if(mods[mi]&&mods[mi].data&&mods[mi].data.tags){var tag=mods[mi].data.tags[ti];if(tag&&tag.text&&tag.text.trim()!==''){showConfirm('是否删除？',function(yes){if(yes){mods[mi].data.tags.splice(ti,1);refreshProps(nodeId.replace('_qmod',''));}});return;}mods[mi].data.tags.splice(ti,1);refreshProps(nodeId.replace('_qmod',''));}}
 function chNodeModSpecialTag(nodeId,mi,ti,v){const mods=getNodeMods(nodeId);if(mods[mi]&&mods[mi].data&&mods[mi].data.tags&&mods[mi].data.tags[ti]){mods[mi].data.tags[ti].text=v;refreshPreview();}}
 function chNodeModSpecialTagSubtitle(nodeId,mi,v){const mods=getNodeMods(nodeId);if(mods[mi]&&mods[mi].data){mods[mi].data.subtitle=v;refreshPreview();}}
 function addNodeModQuote(nodeId,mi){const mods=getNodeMods(nodeId);if(mods[mi]&&mods[mi].data.quotes){mods[mi].data.quotes.push({title:'',content:''});refreshProps(nodeId.replace('_qmod',''));}}
@@ -3494,7 +3512,7 @@ function addCompMod(nodeId,compType){
     'text': { type: 'text', data: { title: '', icon: 'edit', subtitle: '', attachmentUrl: '', attachmentName: '' } },
     'text-plain': { type: 'text', data: { title: '纯文字', icon: 'edit', subtitle: '', attachmentUrl: '', attachmentName: '', content: '', pdfUrl: '', pdfName: '', keyPoints: '' } },
     'text-timeline': { type: 'timeline', data: [{ s: '', c: '' }, { s: '', c: '' }] },
-    'text-tag': { type: 'text', data: { title: '标签', icon: 'check', tags: ['','',''] } },
+    'text-tag': { type: 'text', title: '标签', data: { title: '标签', icon: 'check', tags: ['','',''] } },
     'text-quote': { type: 'text', title: '引用', data: { title: '引用', icon: 'alert', quotes: [{ title: '', content: '' }] } },
     'text-multi-quote': { type: 'text', title: '多级引用', data: { title: '多级引用', icon: 'file', groups: [{l1:'',l2s:[{l2:'',l3:[]}]}] } },
     'text-num-quote': { type: 'text', title: '序号引用', data: { title: '序号引用', icon: 'grid', numQuotes: ['','',''] } },
@@ -3650,6 +3668,63 @@ function parseTableOcrResult(nodeId,mi,text,statusEl){
   while(t.headers.length>maxCols)t.headers.pop();
   t.rows=parsedRows.map(function(row){return row.map(function(cellText){return{text:cellText,bold:false,color:null};});});
   if(statusEl)statusEl.textContent='识别完成，已填充 '+t.rows.length+' 行 '+maxCols+' 列';
+  refreshProps(nodeId.replace('_qmod',''));
+}
+
+// ---- 文字转表格 ----
+function showTextToTableDialog(nodeId,mi){
+  var ov=document.createElement('div');
+  ov.className='ttt-overlay';
+  ov.innerHTML='<div class="ttt-dialog">'+
+    '<h3>文字转表格</h3>'+
+    '<div class="ttt-desc">请粘贴表格文字，支持 Tab / 竖线 | / 分号 ; / 多个空格 分隔。<br>第一行为表头，其余为数据行。</div>'+
+    '<textarea id="tttTextarea" placeholder="粘贴表格文字，例如：&#10;姓名&#9;年龄&#9;科室&#10;张三&#9;35&#9;内科&#10;李四&#9;28&#9;外科"></textarea>'+
+    '<div class="ttt-btns">'+
+    '<button class="ttt-cancel" id="tttCancel">取消</button>'+
+    '<button class="ttt-confirm" id="tttConfirm">确定</button>'+
+    '</div></div>';
+  document.body.appendChild(ov);
+  var ta=document.getElementById('tttTextarea');
+  document.getElementById('tttConfirm').onclick=function(){
+    var text=ta.value.trim();
+    ov.remove();
+    if(!text){showToast('请输入文字内容','info');return;}
+    doParseTextToTable(nodeId,mi,text);
+  };
+  document.getElementById('tttCancel').onclick=function(){ov.remove();};
+  ov.onclick=function(e){if(e.target===ov)ov.remove();};
+  setTimeout(function(){ta.focus();},100);
+}
+function doParseTextToTable(nodeId,mi,text){
+  var lines=text.split('\n').filter(function(l){return l.trim();});
+  if(lines.length<1){showToast('未识别到有效内容','info');return;}
+  var mods=getNodeMods(nodeId);if(!mods[mi]||!mods[mi].data){showToast('模块数据异常','info');return;}
+  var t=mods[mi].data;
+  // 检测分隔符
+  var allText=lines.join('\n');
+  var sep;
+  if(allText.indexOf('\t')!==-1)sep='\t';
+  else if(allText.indexOf('|')!==-1)sep='\\|';
+  else if(allText.indexOf(';')!==-1)sep=';';
+  else sep='\\s{2,}';
+  var splitFn=function(line){
+    if(sep==='\\|')return line.split('|').map(function(c){return c.trim();}).filter(function(c){return c!=='';});
+    if(sep===';')return line.split(';').map(function(c){return c.trim();}).filter(function(c){return c!=='';});
+    if(sep==='\\s{2,}')return line.split(/\s{2,}/).map(function(c){return c.trim();});
+    return line.split(sep).map(function(c){return c.trim();});
+  };
+  var parsedRows=lines.map(function(line){return splitFn(line);});
+  if(parsedRows.length===0){showToast('未识别到表格内容','info');return;}
+  var maxCols=Math.max.apply(null,parsedRows.map(function(r){return r.length;}));
+  if(maxCols<1){showToast('未识别到有效列','info');return;}
+  parsedRows.forEach(function(r){while(r.length<maxCols)r.push('');});
+  // 第一行为表头
+  var headerRow=parsedRows.shift();
+  t.headers=headerRow;
+  t.headerStyles=headerRow.map(function(){return{bold:false,color:null};});
+  t.rows=parsedRows.map(function(row){return row.map(function(cellText){return{text:cellText,bold:false,color:null};});});
+  if(t.rows.length<1)t.rows=[[{text:'',bold:false,color:null}].concat(new Array(maxCols-1).fill({text:'',bold:false,color:null}))];
+  showToast('已填充 '+t.rows.length+' 行 '+maxCols+' 列','success');
   refreshProps(nodeId.replace('_qmod',''));
 }
 
@@ -4312,7 +4387,7 @@ function handleNodeModAudioUpload(nodeId,mi,input){
   for(var i=0;i<input.files.length;i++){
     var f=input.files[i];
     if(audios.length>=MAX_AUD){errors.push('最多上传10条音频');break;}
-    if(allowed.indexOf(f.type)===-1){errors.push(f.name+' 仅支持 MP3、WAV、FLAC、AAC 格式');continue;}
+    if(allowed.indexOf(f.type)===-1){errors.push(f.name+' 仅支持 MP3、WAV格式');continue;}
     if(f.size>MAX_SIZE){errors.push(f.name+' 单个音频大小不能超过100MB');continue;}
     var url=URL.createObjectURL(f);
     var title=f.name.replace(/\.[^.]+$/,'');
@@ -4560,7 +4635,7 @@ function renderSingleModuleCard(nodeId, mod, mi, totalMods, canMoveUp, canMoveDo
         '</div>';
       }).join('');
     }
-    var uploadHtml='<div style="margin-top:12px;display:flex;align-items:center;gap:10px"><button class="btn btn-o btn-sm" style="position:relative;overflow:hidden">上传视频<input type="file" accept="video/mp4,video/x-matroska,video/avi,video/quicktime" multiple style="position:absolute;opacity:0;inset:0;cursor:pointer" onchange="handleNodeModVideoUpload(\''+nodeId+'\','+mi+',this)"></button><span style="font-size:11px;color:#94a3b8">支持MP4 / MKV / AVI / MOV格式</span></div>';
+    var uploadHtml='<div style="margin-top:12px;display:flex;align-items:center;gap:10px"><button class="btn btn-o btn-sm" style="position:relative;overflow:hidden">上传视频<input type="file" accept="video/mp4,video/x-matroska,video/avi,video/quicktime" multiple style="position:absolute;opacity:0;inset:0;cursor:pointer" onchange="handleNodeModVideoUpload(\''+nodeId+'\','+mi+',this)"></button><span style="font-size:11px;color:#94a3b8">支持MP4 / AVI 格式</span></div>';
     modBody=listHtml+uploadHtml;
   } else if (mod.type==='audio') {
     var aud=mod.data||{};
@@ -4580,7 +4655,7 @@ function renderSingleModuleCard(nodeId, mod, mi, totalMods, canMoveUp, canMoveDo
         '</div>';
       }).join('');
     }
-    var uploadHtml='<div style="margin-top:12px;display:flex;align-items:center;gap:10px"><button class="btn btn-o btn-sm" style="position:relative;overflow:hidden">上传音频<input type="file" accept="audio/mpeg,audio/wav,audio/x-wav,audio/flac,audio/aac,audio/x-m4a" multiple style="position:absolute;opacity:0;inset:0;cursor:pointer" onchange="handleNodeModAudioUpload(\''+nodeId+'\','+mi+',this)"></button><span style="font-size:11px;color:#94a3b8">仅支持 MP3、WAV、FLAC、AAC 格式</span></div>';
+    var uploadHtml='<div style="margin-top:12px;display:flex;align-items:center;gap:10px"><button class="btn btn-o btn-sm" style="position:relative;overflow:hidden">上传音频<input type="file" accept="audio/mpeg,audio/wav,audio/x-wav,audio/flac,audio/aac,audio/x-m4a" multiple style="position:absolute;opacity:0;inset:0;cursor:pointer" onchange="handleNodeModAudioUpload(\''+nodeId+'\','+mi+',this)"></button><span style="font-size:11px;color:#94a3b8">仅支持 MP3、WAV格式</span></div>';
     modBody=listHtml+uploadHtml;
   } else if (mod.type==='image') {
     var imgData=mod.data||{images:[]};
@@ -4616,7 +4691,7 @@ function renderSingleModuleCard(nodeId, mod, mi, totalMods, canMoveUp, canMoveDo
       uploadBtn='<button class="btn btn-o btn-sm" style="position:relative;overflow:hidden;margin-top:6px">'+
         '<input type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/bmp" multiple style="position:absolute;opacity:0;inset:0;cursor:pointer" onchange="handleNodeModImgUploadMulti(\''+nodeId+'\','+mi+',this)">上传图片'+
         '</button>'+
-        '<span style="font-size:11px;color:#94a3b8;margin-left:8px">支持 JPG/PNG/GIF/WebP/BMP，单张≤10MB</span>';
+        '<span style="font-size:11px;color:#94a3b8;margin-left:8px">支持 JPG/PNG，单张≤10MB</span>';
     } else {
       uploadBtn='<span style="font-size:11px;color:#ef4444;margin-top:6px;display:inline-block">已达上限（20张）</span>';
     }
@@ -4796,7 +4871,7 @@ function renderSingleModuleCard(nodeId, mod, mi, totalMods, canMoveUp, canMoveDo
     var batchBtn='<div class="tbl-batch-row"><button class="tbl-batch-btn" id="btn_'+batchId+'" onclick="toggleBatchPanel(\''+nodeId+'\','+mi+')">'+
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>批量操作</button>'+
       batchPanel+'</div>';
-    var ocrHtml='<div class="tbl-ocr-upload"><button class="tbl-ocr-btn" onclick="triggerTableOcr(\''+nodeId+'\','+mi+',this)" title="上传图片自动识别填充表格"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>上传图片（OCR识别填充）</button><input type="file" accept="image/*" style="display:none" onchange="handleTableOcrUpload(\''+nodeId+'\','+mi+',this)"><span class="tbl-ocr-status" id="ocrStatus_'+nodeId+'_'+mi+'"></span></div>';
+    var ocrHtml='<div class="tbl-ocr-upload"><button class="tbl-ocr-btn" onclick="triggerTableOcr(\''+nodeId+'\','+mi+',this)" title="上传图片自动识别填充表格"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>OCR识别</button><input type="file" accept="image/*" style="display:none" onchange="handleTableOcrUpload(\''+nodeId+'\','+mi+',this)"><button class="tbl-ocr-btn" onclick="showTextToTableDialog(\''+nodeId+'\','+mi+')" title="粘贴文字自动识别为表格"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>文字转表格</button><span class="tbl-ocr-status" id="ocrStatus_'+nodeId+'_'+mi+'"></span></div>';
     var kpVid=nodeId+'_kp_'+mi;
     var keyPointsPanel = t.keyPoints ? '<div style="margin-top:4px;padding-top:4px;border-top:1px dashed var(--bdr)"><div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--primary)">要点内容</div><div class="mod-rich-editor">'+rteToolbar(kpVid)+'<div class="mod-rich-content" id="rte_'+kpVid+'" contenteditable="true" oninput="chNodeModField(\''+nodeId+'\','+mi+',\'keyPoints\',this.innerHTML)" onblur="chNodeModField(\''+nodeId+'\','+mi+',\'keyPoints\',this.innerHTML)">'+(t.keyPoints||'')+'</div></div></div>' : '';
     var keyPointBtn=kpBtnHtml('kpBtn_'+nodeId+'_'+mi,"generateKeyPoints('"+nodeId+"',"+mi+")",kpLabel(t.keyPoints));
@@ -5083,7 +5158,7 @@ function renderSingleModuleCard(nodeId, mod, mi, totalMods, canMoveUp, canMoveDo
     var waAnswerOpts=['参考答案1（我是一个分值）','参考答案2（我是一个分值）','参考答案3（我是一个分值）'];
     modBody = '<div class="fg"><label class="fl">病史资料回顾（选填）</label><select class="fi" onchange="chNodeModField(\''+nodeId+'\','+mi+',\'review\',this.value)">'+waReviewOpts.map(function(ro){return '<option value="'+(ro==='无'?'':ro)+'" '+(wa.review===ro||(ro==='无'&&!wa.review)?'selected':'')+'>'+ro+'</option>';}).join('')+'</select></div>'+
     '<div class="fg"><label class="fl">题干</label><textarea class="fi fta" style="min-height:40px" placeholder="请输入题干" oninput="chNodeModField(\''+nodeId+'\','+mi+',\'question\',this.value)">'+esc(wa.question||'')+'</textarea></div>'+
-    '<div style="margin-top:16px">'+
+    '<div style="margin-top:8px">'+
       '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">'+
         '<label class="fl" style="margin-bottom:0">词库上传</label>'+
         '<a href="javascript:void(0)" onclick="downloadWordAssocTemplate();return false;" style="color:var(--primary);font-size:12px;text-decoration:none">下载模版</a>'+
@@ -5093,26 +5168,6 @@ function renderSingleModuleCard(nodeId, mod, mi, totalMods, canMoveUp, canMoveDo
           '<button class="btn" style="background:#fff;color:var(--primary);border:1px solid var(--primary);font-weight:400;font-size:12px;padding:4px 12px;border-radius:4px;cursor:pointer">点击上传</button>'+
           '<input type="file" accept=".xlsx,.xls,.csv,.txt" style="position:absolute;inset:0;opacity:0;cursor:pointer" onchange="handleWordBankUpload(\''+nodeId+'\','+mi+',this)">'+
         '</div>'+
-      '</div>'+
-    '</div>'+
-    '<div style="margin-top:12px">'+
-      '<label class="fl" style="margin-bottom:8px">词库分值</label>'+
-      '<div style="display:flex;align-items:center;gap:8px">'+
-        '<label class="wa-toggle">'+
-          '<input type="checkbox" '+(wa.scoreEnabled!==false?'checked':'')+' onchange="chNodeModWordAssocField(\''+nodeId+'\','+mi+',\'scoreEnabled\',this.checked)">'+
-          '<span class="wa-toggle-slider"></span>'+
-        '</label>'+
-        '<span style="font-size:12px;color:var(--at)">'+(wa.scoreEnabled!==false?'开启':'关闭')+'</span>'+
-      '</div>'+
-    '</div>'+
-    '<div style="margin-top:12px">'+
-      '<label class="fl" style="margin-bottom:8px">检测结果</label>'+
-      '<div style="display:flex;align-items:center;gap:8px">'+
-        '<label class="wa-toggle">'+
-          '<input type="checkbox" '+(wa.resultVisible!==false?'checked':'')+' onchange="chNodeModWordAssocField(\''+nodeId+'\','+mi+',\'resultVisible\',this.checked)">'+
-          '<span class="wa-toggle-slider"></span>'+
-        '</label>'+
-        '<span style="font-size:12px;color:var(--at)">'+(wa.resultVisible!==false?'显示':'隐藏')+'</span>'+
       '</div>'+
     '</div>'+
     '<div class="fg" style="margin-top:16px"><label class="fl">参考答案</label><select class="fi" onchange="chNodeModField(\''+nodeId+'\','+mi+',\'answer\',this.value)">'+waAnswerOpts.map(function(ao){return '<option value="'+ao+'" '+(wa.answer===ao?'selected':'')+'>'+ao+'</option>';}).join('')+'</select></div>';
@@ -5226,14 +5281,13 @@ function renderSingleModuleCard(nodeId, mod, mi, totalMods, canMoveUp, canMoveDo
     var stSubtitle = stData.subtitle || '';
     var stTags = stData.tags || [{text:''},{text:''},{text:''}];
     var tagItems = stTags.map(function(tg, tgi){
-      var canDel = stTags.length > 1;
       var tagLabel = '标签' + (tgi + 1);
       var tagVal = tg.text || '';
       var isDefault = !tagVal || tagVal === '标签一' || tagVal === '标签二' || tagVal === '标签三' || tagVal === '请输入标签';
       var displayVal = isDefault ? '' : tagVal;
       return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'+
         '<input class="fi sp-tag-input" style="flex:1'+(isDefault?';color:#b0b0b0':'')+'" value="'+esc(displayVal)+'" placeholder="'+tagLabel+'" oninput="chNodeModSpecialTag(\''+nodeId+'\','+mi+','+tgi+',this.value);var d=!this.value||this.value===\'标签一\'||this.value===\'标签二\'||this.value===\'标签三\'||this.value===\'请输入标签\';this.style.color=d?\'#b0b0b0\':\'\'">'+
-        (canDel?'<button class="btn btn-sm btn-d" onclick="rmNodeModSpecialTag(\''+nodeId+'\','+mi+','+tgi+')" style="flex-shrink:0;width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;color:#ef4444;border-color:#ef4444">×</button>':'')+
+        '<button class="btn btn-sm btn-d" onclick="rmNodeModSpecialTag(\''+nodeId+'\','+mi+','+tgi+')" style="flex-shrink:0;width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;color:#ef4444;border-color:#ef4444">×</button>'+
       '</div>';
     }).join('');
     modBody = '<div class="fg" style="margin-bottom:12px"><input class="fi" value="'+esc(stSubtitle)+'" placeholder="请输入小标题" oninput="chNodeModSpecialTagSubtitle(\''+nodeId+'\','+mi+',this.value)"></div>'+
@@ -5249,16 +5303,11 @@ function renderSingleModuleCard(nodeId, mod, mi, totalMods, canMoveUp, canMoveDo
       var st = sub.type;
       var sColor = modColors[st]||'#888';
       // 子元件标题（与主mod-card逻辑一致）
-      var sTitleText = sub.title || modNames[st] || st;
-      if(st==='quiz' && !sub.title){
-        sTitleText = (sub.data && sub.data.qy==='multi') ? '多选题' : '单选题';
-      }
-      if(st==='person' && !sub.title){
-        sTitleText = (sub.data && sub.data.align==='right') ? '人物信息（居右）' : '人物信息（居左）';
-      }
-      if(st==='text' && !sub.title && sub.data && sub.data.icon==='link' && sub.data.title==='参考文献'){
-        sTitleText = '参考文献';
-      }
+      var sTitleText = modNames[st] || st;
+      if(st==='quiz' && sub.data && sub.data.qy==='multi'){ sTitleText='多选题'; }
+      if(st==='quiz' && (!sub.data || sub.data.qy!=='multi')){ sTitleText='单选题'; }
+      if(st==='person'){ sTitleText = (sub.data && sub.data.align==='right') ? '人物信息（居右）' : '人物信息（居左）'; }
+      if(st==='text' && sub.data && sub.data.icon==='link' && sub.data.title==='参考文献'){ sTitleText='参考文献'; }
       // 子元件图标SVG（与主mod-card一致）
       var sIconSvg;
       if (sub.iconName === undefined || sub.iconName === null) {
@@ -5330,7 +5379,12 @@ function renderSingleModuleCard(nodeId, mod, mi, totalMods, canMoveUp, canMoveDo
       '<button class="mod-act" title="\u4e0b\u79fb" onclick="moveNodeMod(\''+nodeId+'\','+mi+',1)" '+(canMoveDown!==undefined?!canMoveDown:mi===totalMods-1?'disabled':'')+'>\u2193</button>'+
       '<button class="mod-act del" title="\u5220\u9664" onclick="rmNodeMod(\''+nodeId+'\','+mi+')">\u2715</button>'+
     '</div></div>';
-  var innerCardBtns = '<div class="mod-card-hd"><div class="mod-card-hd-left"><span style="font-size:13px;color:#1f2937;font-weight:500">'+esc(modTitleText)+'</span></div><div class="mod-acts">'+
+  var fixedTypeName = modNames[mod.type] || mod.type;
+  if(mod.type==='quiz' && mod.data && mod.data.qy==='multi') fixedTypeName='多选题';
+  if(mod.type==='quiz' && (!mod.data || mod.data.qy!=='multi')) fixedTypeName='单选题';
+  if(mod.type==='person') fixedTypeName = (mod.data && mod.data.align==='right') ? '人物信息（居右）' : '人物信息（居左）';
+  if(mod.type==='text' && mod.data && mod.data.icon==='link' && mod.data.title==='参考文献') fixedTypeName='参考文献';
+  var innerCardBtns = '<div class="mod-card-hd"><div class="mod-card-hd-left"><span style="font-size:13px;color:#1f2937;font-weight:500">'+esc(fixedTypeName)+'</span></div><div class="mod-acts">'+
       '<button class="mod-act copy-mod-btn" title="\u590d\u5236" onclick="copyInnerModAsSubElement(\''+nodeId+'\','+mi+')">\u590d\u5236</button>'+
       '<button class="mod-act" title="\u4e0a\u79fb" onclick="moveNodeMod(\''+nodeId+'\','+mi+',-1)" '+(canMoveUp!==undefined?!canMoveUp:mi===0?'disabled':'')+'>\u2191</button>'+
       '<button class="mod-act" title="\u4e0b\u79fb" onclick="moveNodeMod(\''+nodeId+'\','+mi+',1)" '+(canMoveDown!==undefined?!canMoveDown:mi===totalMods-1?'disabled':'')+'>\u2193</button>'+
@@ -5346,7 +5400,7 @@ function renderSingleModuleCard(nodeId, mod, mi, totalMods, canMoveUp, canMoveDo
       '<div class="mod-card-hd-left">'+
         outerIconHtml+
         '<div class="mod-card-title">'+
-          '<input class="mod-card-title-input" value="空白模版" style="font-size:13px;font-weight:700;color:#94a3b8" onchange="chNodeModTitle(\''+nodeId+'\','+mi+',this.value)" oninput="autoFitInputWidth(this)" onfocus="this.readOnly=false;this.select()" title="双击编辑标题" readonly ondblclick="this.readOnly=false;this.focus()">'+
+          '<input class="mod-card-title-input" value="'+esc(modTitleText)+'" style="font-size:13px;font-weight:700;color:#334155" onchange="chNodeModTitle(\''+nodeId+'\','+mi+',this.value)" oninput="autoFitInputWidth(this)" onfocus="this.readOnly=false;this.select()" title="双击编辑标题" readonly ondblclick="this.readOnly=false;this.focus()">'+
           '<svg class="mod-card-title-pen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" onclick="var inp=this.previousElementSibling;inp.readOnly=false;inp.focus();inp.select()"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'+
         '</div>'+
       '</div>'+
@@ -5867,7 +5921,7 @@ document.addEventListener('mouseup', function(e){
     'text': { type: 'text', data: { title: '', icon: 'edit', subtitle: '', attachmentUrl: '', attachmentName: '' } },
     'text-plain': { type: 'text', data: { title: '纯文字', icon: 'edit', subtitle: '', attachmentUrl: '', attachmentName: '', content: '', pdfUrl: '', pdfName: '', keyPoints: '' } },
     'text-timeline': { type: 'timeline', data: [{ s: '', c: '' }, { s: '', c: '' }] },
-    'text-tag': { type: 'text', data: { title: '标签', icon: 'check', tags: ['','',''] } },
+    'text-tag': { type: 'text', title: '标签', data: { title: '标签', icon: 'check', tags: ['','',''] } },
     'text-quote': { type: 'text', title: '引用', data: { title: '引用', icon: 'alert', quotes: [{ title: '', content: '' }] } },
     'text-multi-quote': { type: 'text', title: '多级引用', data: { title: '多级引用', icon: 'file', groups: [{l1:'',l2s:[{l2:'',l3:[]}]}] } },
     'text-num-quote': { type: 'text', title: '序号引用', data: { title: '序号引用', icon: 'grid', numQuotes: ['','',''] } },
@@ -7140,7 +7194,7 @@ function insertModFromAddMenu(nodeId, modIdx, compType) {
     'text': { type: 'text', data: { title: '', icon: 'edit', subtitle: '', attachmentUrl: '', attachmentName: '' } },
     'text-plain': { type: 'text', data: { title: '纯文字', icon: 'edit', subtitle: '', attachmentUrl: '', attachmentName: '', content: '', pdfUrl: '', pdfName: '', keyPoints: '' } },
     'text-timeline': { type: 'timeline', data: [{ s: '', c: '' }, { s: '', c: '' }] },
-    'text-tag': { type: 'text', data: { title: '标签', icon: 'check', tags: ['','',''] } },
+    'text-tag': { type: 'text', title: '标签', data: { title: '标签', icon: 'check', tags: ['','',''] } },
     'text-quote': { type: 'text', title: '引用', data: { title: '引用', icon: 'alert', quotes: [{ title: '', content: '' }] } },
     'text-multi-quote': { type: 'text', title: '多级引用', data: { title: '多级引用', icon: 'file', groups: [{l1:'',l2s:[{l2:'',l3:[]}]}] } },
     'text-num-quote': { type: 'text', title: '序号引用', data: { title: '序号引用', icon: 'grid', numQuotes: ['','',''] } },
@@ -7156,6 +7210,7 @@ function insertModFromAddMenu(nodeId, modIdx, compType) {
     'blank-2col': { type: 'blank', title: '2列模版', data: { columns: 2, displayMode: 'equal', slots: [null, null] } },
     'blank-3col': { type: 'blank', title: '3列模版', data: { columns: 3, displayMode: 'equal', slots: [null, null, null] } },
     'reference': { type: 'text', data: { title: '参考文献', icon: 'link', subtitle: '', attachmentUrl: '', attachmentName: '', content: '', pdfUrl: '', pdfName: '' } },
+    'special-tag': { type: 'special-tag', title: '特殊标签', data: { subtitle: '', tags: [{text:''},{text:''},{text:''}] } },
   };
 
   var def = deepCopy(typeMap[compType]);
@@ -7197,7 +7252,7 @@ function createEmptyMod(type){
     table:{type:'table',data:{title:'',headers:['输入表头','输入表头'],rows:[[{text:'',bold:false,color:null},{text:'',bold:false,color:null}],[{text:'',bold:false,color:null},{text:'',bold:false,color:null}]]}},
     text:{type:'text',data:{title:'文本',icon:'edit',subtitle:'',attachmentUrl:'',attachmentName:''}},
     'text-plain':{type:'text',data:{title:'纯文字',icon:'edit',subtitle:'',attachmentUrl:'',attachmentName:'',content:'',pdfUrl:'',pdfName:'',keyPoints:''}},
-    'text-tag':{type:'text',data:{title:'标签',icon:'check',tags:[{text:'',important:false},{text:'',important:false},{text:'',important:false}]}},
+    'text-tag':{type:'text',title:'标签',data:{title:'标签',icon:'check',tags:[{text:'',important:false},{text:'',important:false},{text:'',important:false}]}},
     'text-quote':{type:'text',data:{title:'引用',icon:'alert',quotes:[{title:'',content:''}]}},
     'text-multi-quote':{type:'text',data:{title:'多级引用',icon:'file',groups:[{l1:'',l2s:[{l2:'',l3:[]}]}]}},
     'text-num-quote':{type:'text',data:{title:'序号引用',icon:'grid',numQuotes:['','','']}},
@@ -7209,7 +7264,8 @@ function createEmptyMod(type){
     blank:{type:'blank',data:{columns:1,displayMode:'tab',slots:[null]}},
     'blank-2col':{type:'blank',data:{columns:2,displayMode:'equal',slots:[null,null]}},
     'blank-3col':{type:'blank',data:{columns:3,displayMode:'equal',slots:[null,null,null]}},
-    reference:{type:'text',data:{title:'参考文献',icon:'link',subtitle:'',attachmentUrl:'',attachmentName:'',content:'',pdfUrl:'',pdfName:''}}
+    reference:{type:'text',data:{title:'参考文献',icon:'link',subtitle:'',attachmentUrl:'',attachmentName:'',content:'',pdfUrl:'',pdfName:''}},
+    'special-tag':{type:'special-tag',data:{subtitle:'',tags:[{text:''},{text:''},{text:''}]}}
   };
   return defs[type] ? JSON.parse(JSON.stringify(defs[type])) : {type:type,data:''};
 }
@@ -7440,11 +7496,11 @@ function chBlankSlotTitle(nodeId, mi, slotIdx, value, isSub, si) {
 // isSub=true 表示在子元件内，si 为子元件索引
 function renderBlankSlotFilled(slot, slotIdx, nodeId, mi, isSub, si, totalSlots, bodyHtml) {
   var sColor = MOD_COLORS[slot.type] || '#888';
-  var sTitleText = slot.title || MOD_NAMES[slot.type] || slot.type;
-  if(slot.type==='quiz' && !slot.title && slot.data && slot.data.qy==='multi'){ sTitleText='多选题'; }
-  if(slot.type==='quiz' && !slot.title && (!slot.data || slot.data.qy!=='multi')){ sTitleText='单选题'; }
-  if(slot.type==='person' && !slot.title){ sTitleText = (slot.data && slot.data.align==='right') ? '人物信息（居右）' : '人物信息（居左）'; }
-  if(slot.type==='text' && !slot.title && slot.data && slot.data.icon==='link' && slot.data.title==='参考文献'){ sTitleText='参考文献'; }
+  var sTitleText = MOD_NAMES[slot.type] || slot.type;
+  if(slot.type==='quiz' && slot.data && slot.data.qy==='multi'){ sTitleText='多选题'; }
+  if(slot.type==='quiz' && (!slot.data || slot.data.qy!=='multi')){ sTitleText='单选题'; }
+  if(slot.type==='person'){ sTitleText = (slot.data && slot.data.align==='right') ? '人物信息（居右）' : '人物信息（居左）'; }
+  if(slot.type==='text' && slot.data && slot.data.icon==='link' && slot.data.title==='参考文献'){ sTitleText='参考文献'; }
   var isRefType = (slot.type==='text' && slot.data && slot.data.icon==='link' && slot.data.title==='参考文献');
   var sIconSvg = slot.icon || MOD_ICONS[slot.type] || '<svg class="i"><use href="#i-layers"/></svg>';
   var siStr = isSub ? si : 0;
@@ -7688,7 +7744,7 @@ function handleSubElemAudioUpload(nodeId,mi,si,input){
   for(var i=0;i<input.files.length;i++){
     var f=input.files[i];
     if(audios.length>=MAX_AUD){errors.push('已达上限10个');break;}
-    if(allowed.indexOf(f.type)===-1){errors.push(f.name+' 仅支持 MP3、WAV、FLAC、AAC 格式');continue;}
+    if(allowed.indexOf(f.type)===-1){errors.push(f.name+' 仅支持 MP3、WAV格式');continue;}
     if(f.size>MAX_SIZE){errors.push(f.name+' 超过100MB');continue;}
     var url=URL.createObjectURL(f);
     audios.push({url:url,title:f.name.replace(/\.[^.]+$/,'')});
@@ -7821,7 +7877,7 @@ function rmSubElemTag(nodeId,mi,si,ti){var sub=getSubElem(nodeId,mi,si);if(sub&&
 function chSubElemTag(nodeId,mi,si,ti,val){var sub=getSubElem(nodeId,mi,si);if(sub&&sub.data&&sub.data.tags&&sub.data.tags[ti]){sub.data.tags[ti].text=val;refreshPreview(nodeId);}}
 function chSubElemTagImportant(nodeId,mi,si,ti,val){var sub=getSubElem(nodeId,mi,si);if(sub&&sub.data&&sub.data.tags&&sub.data.tags[ti]){sub.data.tags[ti].important=val;refreshPreview(nodeId);}}
 function addSubElemSpecialTag(nodeId,mi,si){var sub=getSubElem(nodeId,mi,si);if(sub&&sub.data){if(!sub.data.tags)sub.data.tags=[];sub.data.tags.push({text:''});showPropsPanel(nodeId);}}
-function rmSubElemSpecialTag(nodeId,mi,si,tgi){var sub=getSubElem(nodeId,mi,si);if(sub&&sub.data&&sub.data.tags&&sub.data.tags.length>1){sub.data.tags.splice(tgi,1);showPropsPanel(nodeId);refreshPreview(nodeId);}}
+function rmSubElemSpecialTag(nodeId,mi,si,tgi){var sub=getSubElem(nodeId,mi,si);if(sub&&sub.data&&sub.data.tags){sub.data.tags.splice(tgi,1);showPropsPanel(nodeId);refreshPreview(nodeId);}}
 function chSubElemSpecialTag(nodeId,mi,si,tgi,val){var sub=getSubElem(nodeId,mi,si);if(sub&&sub.data&&sub.data.tags&&sub.data.tags[tgi]){sub.data.tags[tgi].text=val;refreshPreview(nodeId);}}
 function chSubElemSpecialTagSubtitle(nodeId,mi,si,val){var sub=getSubElem(nodeId,mi,si);if(sub&&sub.data){sub.data.subtitle=val;refreshPreview(nodeId);}}
 function addSubElemQuote(nodeId,mi,si){var sub=getSubElem(nodeId,mi,si);if(sub&&sub.data){if(!sub.data.quotes)sub.data.quotes=[];sub.data.quotes.push({title:'',content:''});showPropsPanel(nodeId);}}
@@ -7951,7 +8007,7 @@ function renderSubElemBody(nodeId, mi, si, sub) {
         '</div>';
       }).join('');
     }
-    var uploadHtml='<div style="margin-top:12px;display:flex;align-items:center;gap:10px"><button class="btn btn-o btn-sm" style="position:relative;overflow:hidden">上传视频<input type="file" accept="video/mp4,video/x-matroska,video/avi,video/quicktime" multiple style="position:absolute;opacity:0;inset:0;cursor:pointer" onchange="handleSubElemVideoUpload(\''+nodeId+'\','+mi+','+si+',this)"></button><span style="font-size:11px;color:#94a3b8">支持MP4 / MKV / AVI / MOV格式</span></div>';
+    var uploadHtml='<div style="margin-top:12px;display:flex;align-items:center;gap:10px"><button class="btn btn-o btn-sm" style="position:relative;overflow:hidden">上传视频<input type="file" accept="video/mp4,video/x-matroska,video/avi,video/quicktime" multiple style="position:absolute;opacity:0;inset:0;cursor:pointer" onchange="handleSubElemVideoUpload(\''+nodeId+'\','+mi+','+si+',this)"></button><span style="font-size:11px;color:#94a3b8">支持MP4 / AVI 格式</span></div>';
     sBody=listHtml+uploadHtml;
 
   } else if (st === 'audio') {
@@ -7972,7 +8028,7 @@ function renderSubElemBody(nodeId, mi, si, sub) {
         '</div>';
       }).join('');
     }
-    var uploadHtml='<div style="margin-top:12px;display:flex;align-items:center;gap:10px"><button class="btn btn-o btn-sm" style="position:relative;overflow:hidden">上传音频<input type="file" accept="audio/mpeg,audio/wav,audio/x-wav,audio/flac,audio/aac,audio/x-m4a" multiple style="position:absolute;opacity:0;inset:0;cursor:pointer" onchange="handleSubElemAudioUpload(\''+nodeId+'\','+mi+','+si+',this)"></button><span style="font-size:11px;color:#94a3b8">仅支持 MP3、WAV、FLAC、AAC 格式</span></div>';
+    var uploadHtml='<div style="margin-top:12px;display:flex;align-items:center;gap:10px"><button class="btn btn-o btn-sm" style="position:relative;overflow:hidden">上传音频<input type="file" accept="audio/mpeg,audio/wav,audio/x-wav,audio/flac,audio/aac,audio/x-m4a" multiple style="position:absolute;opacity:0;inset:0;cursor:pointer" onchange="handleSubElemAudioUpload(\''+nodeId+'\','+mi+','+si+',this)"></button><span style="font-size:11px;color:#94a3b8">仅支持 MP3、WAV格式</span></div>';
     sBody=listHtml+uploadHtml;
 
   } else if (st === 'image') {
@@ -8009,7 +8065,7 @@ function renderSubElemBody(nodeId, mi, si, sub) {
       uploadBtn='<button class="btn btn-o btn-sm" style="position:relative;overflow:hidden;margin-top:6px">'+
         '<input type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/bmp" multiple style="position:absolute;opacity:0;inset:0;cursor:pointer" onchange="handleSubElemImgUploadMulti(\''+nodeId+'\','+mi+','+si+',this)">上传图片'+
         '</button>'+
-        '<span style="font-size:11px;color:#94a3b8;margin-left:8px">支持 JPG/PNG/GIF/WebP/BMP，单张≤10MB</span>';
+        '<span style="font-size:11px;color:#94a3b8;margin-left:8px">支持 JPG/PNG，单张≤10MB</span>';
     } else {
       uploadBtn='<span style="font-size:11px;color:#ef4444;margin-top:6px;display:inline-block">已达上限（20张）</span>';
     }
@@ -8111,7 +8167,7 @@ function renderSubElemBody(nodeId, mi, si, sub) {
     var batchBtn='<div class="tbl-batch-row"><button class="tbl-batch-btn" id="btn_'+batchId+'" onclick="toggleSubBatchPanel(\''+nodeId+'\','+mi+','+si+')">'+
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>批量操作</button>'+
       batchPanel+'</div>';
-    var ocrHtml='<div class="tbl-ocr-upload"><button class="tbl-ocr-btn" onclick="triggerTableOcr(\''+nodeId+'\','+mi+',this)" title="上传图片自动识别填充表格"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>上传图片（OCR识别填充）</button><input type="file" accept="image/*" style="display:none" onchange="handleTableOcrUpload(\''+nodeId+'\','+mi+',this)"><span class="tbl-ocr-status" id="ocrStatus_'+nodeId+'_'+mi+'"></span></div>';
+    var ocrHtml='<div class="tbl-ocr-upload"><button class="tbl-ocr-btn" onclick="triggerTableOcr(\''+nodeId+'\','+mi+',this)" title="上传图片自动识别填充表格"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>OCR识别</button><input type="file" accept="image/*" style="display:none" onchange="handleTableOcrUpload(\''+nodeId+'\','+mi+',this)"><button class="tbl-ocr-btn" onclick="showTextToTableDialog(\''+nodeId+'\','+mi+')" title="粘贴文字自动识别为表格"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>文字转表格</button><span class="tbl-ocr-status" id="ocrStatus_'+nodeId+'_'+mi+'"></span></div>';
     sBody = '<div class="tbl-actions-row">'+ocrHtml+batchBtn+'</div><div class="mod-table-wrap"><table class="mod-table" id="tbl_'+bid+'"><thead><tr>'+tha+'<th style="width:28px"></th></tr></thead><tbody>'+tb+'</tbody></table></div><div class="tbl-ctrl"><button class="btn btn-o btn-sm" onclick="addSubElemTableRow(\''+nodeId+'\','+mi+','+si+')">+ 添加行</button><button class="btn btn-o btn-sm" onclick="addSubElemTableCol(\''+nodeId+'\','+mi+','+si+')">+ 添加列</button></div>';
     // 生成要点按钮
     var skpVid=vid+'_kp';
@@ -8124,14 +8180,13 @@ function renderSubElemBody(nodeId, mi, si, sub) {
     var stSubtitle = stData.subtitle || '';
     var stTags = stData.tags || [{text:''},{text:''},{text:''}];
     var tagItems = stTags.map(function(tg, tgi){
-      var canDel = stTags.length > 1;
       var tagLabel = '标签' + (tgi + 1);
       var tagVal = tg.text || '';
       var isDefault = !tagVal || tagVal === '标签一' || tagVal === '标签二' || tagVal === '标签三' || tagVal === '请输入标签';
       var displayVal = isDefault ? '' : tagVal;
       return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'+
         '<input class="fi sp-tag-input" style="flex:1'+(isDefault?';color:#b0b0b0':'')+'" value="'+esc(displayVal)+'" placeholder="'+tagLabel+'" oninput="chSubElemSpecialTag(\''+nodeId+'\','+mi+','+si+','+tgi+',this.value);var d=!this.value||this.value===\'标签一\'||this.value===\'标签二\'||this.value===\'标签三\'||this.value===\'请输入标签\';this.style.color=d?\'#b0b0b0\':\'\'">'+
-        (canDel?'<button class="btn btn-sm btn-d" onclick="rmSubElemSpecialTag(\''+nodeId+'\','+mi+','+si+','+tgi+')" style="flex-shrink:0;width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;color:#ef4444;border-color:#ef4444">×</button>':'')+
+        '<button class="btn btn-sm btn-d" onclick="rmSubElemSpecialTag(\''+nodeId+'\','+mi+','+si+','+tgi+')" style="flex-shrink:0;width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;color:#ef4444;border-color:#ef4444">×</button>'+
       '</div>';
     }).join('');
     sBody = '<div class="fg" style="margin-bottom:12px"><input class="fi" value="'+esc(stSubtitle)+'" placeholder="请输入小标题" oninput="chSubElemSpecialTagSubtitle(\''+nodeId+'\','+mi+','+si+',this.value)"></div>'+
@@ -8279,7 +8334,7 @@ function renderSubElemBody(nodeId, mi, si, sub) {
     var waAnswerOpts=['参考答案1（我是一个分值）','参考答案2（我是一个分值）','参考答案3（我是一个分值）'];
     sBody='<div class="fg"><label class="fl">病史资料回顾（选填）</label><select class="fi" onchange="chSubElemField(\''+nodeId+'\','+mi+','+si+',\'review\',this.value)">'+waReviewOpts.map(function(ro){return '<option value="'+(ro==='无'?'':ro)+'" '+(wa.review===ro||(ro==='无'&&!wa.review)?'selected':'')+'>'+ro+'</option>';}).join('')+'</select></div>'+
     '<div class="fg"><label class="fl">题干</label><textarea class="fi fta" style="min-height:40px" placeholder="请输入题干" oninput="chSubElemField(\''+nodeId+'\','+mi+','+si+',\'question\',this.value)">'+esc(wa.question||'')+'</textarea></div>'+
-    '<div style="margin-top:16px">'+
+    '<div style="margin-top:8px">'+
       '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">'+
         '<label class="fl" style="margin-bottom:0">词库上传</label>'+
         '<a href="javascript:void(0)" onclick="downloadWordAssocTemplate();return false;" style="color:var(--primary);font-size:12px;text-decoration:none">下载模版</a>'+
@@ -8289,26 +8344,6 @@ function renderSubElemBody(nodeId, mi, si, sub) {
           '<button class="btn" style="background:#fff;color:var(--primary);border:1px solid var(--primary);font-weight:400;font-size:12px;padding:4px 12px;border-radius:4px;cursor:pointer">点击上传</button>'+
           '<input type="file" accept=".xlsx,.xls,.csv,.txt" style="position:absolute;inset:0;opacity:0;cursor:pointer" onchange="handleSubElemWordBankUpload(\''+nodeId+'\','+mi+','+si+',this)">'+
         '</div>'+
-      '</div>'+
-    '</div>'+
-    '<div style="margin-top:12px">'+
-      '<label class="fl" style="margin-bottom:8px">词库分值</label>'+
-      '<div style="display:flex;align-items:center;gap:8px">'+
-        '<label class="wa-toggle">'+
-          '<input type="checkbox" '+(wa.scoreEnabled!==false?'checked':'')+' onchange="chSubElemWordAssocField(\''+nodeId+'\','+mi+','+si+',\'scoreEnabled\',this.checked)">'+
-          '<span class="wa-toggle-slider"></span>'+
-        '</label>'+
-        '<span style="font-size:12px;color:var(--at)">'+(wa.scoreEnabled!==false?'开启':'关闭')+'</span>'+
-      '</div>'+
-    '</div>'+
-    '<div style="margin-top:12px">'+
-      '<label class="fl" style="margin-bottom:8px">检测结果</label>'+
-      '<div style="display:flex;align-items:center;gap:8px">'+
-        '<label class="wa-toggle">'+
-          '<input type="checkbox" '+(wa.resultVisible!==false?'checked':'')+' onchange="chSubElemWordAssocField(\''+nodeId+'\','+mi+','+si+',\'resultVisible\',this.checked)">'+
-          '<span class="wa-toggle-slider"></span>'+
-        '</label>'+
-        '<span style="font-size:12px;color:var(--at)">'+(wa.resultVisible!==false?'显示':'隐藏')+'</span>'+
       '</div>'+
     '</div>'+
     '<div class="fg" style="margin-top:16px"><label class="fl">参考答案</label><select class="fi" onchange="chSubElemField(\''+nodeId+'\','+mi+','+si+',\'answer\',this.value)">'+waAnswerOpts.map(function(ao){return '<option value="'+ao+'" '+(wa.answer===ao?'selected':'')+'>'+ao+'</option>';}).join('')+'</select></div>';
